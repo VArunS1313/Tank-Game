@@ -46,6 +46,8 @@
 const socket = io('ws://localhost:5000');
 const mapImg = new Image();
 mapImg.src = './snowy.png';
+const duck=new Image();
+duck.src='./duck.png';
 
 const canvasElem = document.getElementById("canvas");
 canvasElem.width = window.innerWidth;
@@ -63,7 +65,53 @@ socket.on('connect', () => {
 socket.on('map', (loadmap) => {
     map = loadmap;
 });
-
+let players=[];
+socket.on('players',(serverplayer)=>{
+    players=serverplayer;
+})
+const input={
+    value:0
+}
+window.addEventListener('keydown',(e)=>{
+    if(e.key=='w')
+    {
+        input.value=-1;
+    }
+    else if(e.key=='a')
+    {
+        input.value=-2;
+    }
+    else if(e.key=='s')
+    {
+        input.value=1;
+    }
+    else if(e.key=='d')
+    {
+        input.value=2;
+    }
+ //   console.log(e.key);
+    socket.emit("input",input)
+})
+window.addEventListener('keyup',(e)=>{
+    if(e.key=='w')
+    {
+        input.value=0;
+    }
+    else if(e.key=='a')
+    {
+        input.value=0;
+    }
+    else if(e.key=='s')
+    {
+        input.value=0;
+    }
+    else if(e.key=='d')
+    {
+        input.value=0;
+    }
+   // console.log(e.key);
+    socket.emit("input",input)
+})
 function draw() {
     const tilerow = 8;
 
@@ -77,6 +125,10 @@ function draw() {
 
             canvas.drawImage(mapImg, simc * tile_size, simr * tile_size, tile_size, tile_size, j * tile_size*scalingFactor, i * tile_size*scalingFactor, tile_size*scalingFactor, tile_size*scalingFactor);
         }
+    }
+    for(const player of players)
+    { //console.log(player.x+" op "+player.y)
+        canvas.drawImage(duck,player.x,player.y);
     }
 
     // Uncomment the next line if you want to continue the animation
