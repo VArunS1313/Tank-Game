@@ -9,11 +9,13 @@ const io = new Server(httpServer);
 const loadmap=require('./mapLoader')
 const Tick_rate=30;
 let map=null;
-const speed=5;
+const speed=6;
+const bulletspeed=7;
 let players=[];
+let bullets=[];
 let inputbyuser={};
  let map2d;
- function tick(){
+ function tick(delta){
   for(const player of players)
   {
     const input=inputbyuser[player.id];
@@ -34,6 +36,18 @@ let inputbyuser={};
     }
 
   }
+ 
+  for(const bullet of bullets)
+  { 
+    bullet.x +=Math.cos(bullet.theta)*bulletspeed;
+    bullet.y +=Math.sin(bullet.theta)*bulletspeed;
+    bullet.timetolive-=delta;
+
+   // console.log(Math.sin(bullet.theta)*bulletspeed);
+  }
+  bullets=bullets.filter((bullet)=>bullet.timetolive>0);
+//console.log(delta);
+  io.emit("bullets",bullets);
   io.emit("players",players);
  }
 async function main(){
@@ -53,7 +67,17 @@ async function main(){
 
      socket.on('input',(input)=>{
       inputbyuser[socket.id]=input;
-     console.log(input)
+     //console.log(input)
+     })
+     socket.on('fire',(theta)=>{
+      const player=players.find((player)=>player.id==socket.id);
+      bullets.push({
+        theta,
+        x:player.x,
+        y:player.y,
+        timetolive:1500
+      });
+     // console.log(theta+" "+player.x)
      })
      socket.on("disconnect",()=>{
       players=players.filter((player)=>player.id!==socket.id)
@@ -63,9 +87,14 @@ async function main(){
     app.use(express.static("public"));
 
 
-
+let lastUpdate=Date.now();
 httpServer.listen(5000);
-setInterval(tick,1000/Tick_rate)
+setInterval(()=>{
+  const now=Date.now();
+  const delta=now-lastUpdate;
+  tick(delta);
+  lastUpdate=Date.now();
+},1000/Tick_rate)
     
 }
 main();

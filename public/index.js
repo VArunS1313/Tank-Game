@@ -60,18 +60,36 @@ const scalingFactor = 0.3;
 const tile_size=32
 socket.on('connect', () => {
     console.log("connected");
+
 });
+
 
 socket.on('map', (loadmap) => {
     map = loadmap;
 });
+// canvasElem.width = map[0].length * tile_size * scalingFactor;
+// canvasElem.height = map.length * tile_size * scalingFactor;
 let players=[];
+let bullets=[];
 socket.on('players',(serverplayer)=>{
     players=serverplayer;
+})
+socket.on('bullets',(serverbullets)=>{
+    bullets=serverbullets;
 })
 const input={
     value:0
 }
+window.addEventListener("click", (event)=> {
+    // Get the mouse coordinates relative to the canvas
+    var mouseX = event.clientX - canvasElem.width  /2;
+    var mouseY = event.clientY - canvasElem.height /2;
+
+    
+    var theta = Math.atan2(mouseY, mouseX);
+// console.log("Mouse Clicked at: X = " + theta);
+    socket.emit("fire",theta)
+});
 window.addEventListener('keydown',(e)=>{
     if(e.key=='w')
     {
@@ -89,7 +107,7 @@ window.addEventListener('keydown',(e)=>{
     {
         input.value=2;
     }
- //   console.log(e.key);
+ //   console.log(input);
     socket.emit("input",input)
 })
 window.addEventListener('keyup',(e)=>{
@@ -116,6 +134,15 @@ function draw() {
     const tilerow = 8;
 
     canvas.clearRect(0, 0, canvasElem.width, canvasElem.height);
+    const myplayer=players.find((player)=>player.id===socket.id)
+    let camx=0;
+    let camy=0;
+    if(myplayer)
+    {
+        camx=myplayer.x-canvasElem.width/2;
+        camy=myplayer.y-canvasElem.height/2;
+
+    }
 
     for (let i = 0; i < map.length; i++) {
         for (let j = 0; j < map[0].length; j++) {
@@ -123,13 +150,24 @@ function draw() {
             const simr = parseInt(id / tilerow);
             const simc = id % tilerow;
 
-            canvas.drawImage(mapImg, simc * tile_size, simr * tile_size, tile_size, tile_size, j * tile_size*scalingFactor, i * tile_size*scalingFactor, tile_size*scalingFactor, tile_size*scalingFactor);
+            canvas.drawImage(mapImg, simc * tile_size, simr * tile_size, tile_size, tile_size, j * tile_size*scalingFactor-camx, i * tile_size*scalingFactor-camy, tile_size*scalingFactor, tile_size*scalingFactor);
         }
     }
     for(const player of players)
     { //console.log(player.x+" op "+player.y)
-        canvas.drawImage(duck,player.x,player.y);
+        canvas.drawImage(duck,player.x-camx,player.y-camy);
     }
+    for(const bullet of bullets)
+    { //console.log(bullet.x+" op "+bullet.y)
+        canvas.fillStyle="#FFFFF"
+        canvas.beginPath();
+       // console.log(bullet.x+" byll "+bullet.y);
+        canvas.arc(bullet.x-camx, bullet.y-camy, 5, 0, 2 * Math.PI);
+        canvas.stroke();
+        
+        
+    }
+
 
     // Uncomment the next line if you want to continue the animation
     window.requestAnimationFrame(draw);
